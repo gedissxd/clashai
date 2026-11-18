@@ -16,3 +16,6 @@ env/
 crbab-venv/
 # User settings (defaults are in clashroyalebuildabot/default_config.yaml)
 /config.yaml
+# Your recorded games and trained AI models
+/recordings/
+/ai_models/

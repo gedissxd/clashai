@@ -11,6 +11,7 @@ Guides and tutorials for setting up, running and developing the bot.
 ## Developing the Bot
 
 - **[Bot Development Tutorial](bot-development.md)**: write actions for your deck.
+- **[AI Training](ai-training.md)**: record your own battles and train a model that plays like you.
 - **[Bot State](bot-state.md)**: how the detectors turn a screenshot into the game state.
 - **[Object Detection Data](object-detection-data.md)**: training data for the detection models.
 

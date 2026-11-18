@@ -1,3 +1,4 @@
+import os
 import random
 import threading
 from typing import cast
@@ -7,6 +8,7 @@ from loguru import logger
 from clashroyalebuildabot.constants import (
     ALL_TILES,
     ALLY_TILES,
+    APP_DIR,
     DISPLAY_CARD_DELTA_X,
     DISPLAY_CARD_HEIGHT,
     DISPLAY_CARD_INIT_X,
@@ -24,7 +26,26 @@ from clashroyalebuildabot.detectors.detector import Detector
 from clashroyalebuildabot.emulator.emulator import Emulator
 from clashroyalebuildabot.namespaces import Screens
 from clashroyalebuildabot.namespaces.state import State
+from clashroyalebuildabot.utils.error_handling import WikifiedError
 from clashroyalebuildabot.visualizer import Visualizer
+
+
+def _load_policy(ai_config):
+    """The trained model, when ai.enabled is set in the config."""
+    from clashroyalebuildabot.ai.policy import LearnedPolicy
+
+    model_path = os.path.join(APP_DIR, ai_config["model_path"])
+    try:
+        policy = LearnedPolicy(
+            model_path, play_threshold=ai_config.get("play_threshold", 0.5)
+        )
+    except (OSError, ValueError, KeyError) as e:
+        raise WikifiedError("011", f"Couldn't load the AI model: {e}") from e
+    logger.info(
+        "Playing with the trained model "
+        f"({', '.join(card.name for card in policy.deck)})."
+    )
+    return policy
 
 
 class Bot:
@@ -36,9 +57,19 @@ class Bot:
         self._stop_event = threading.Event()
         self._pause_event = threading.Event()
 
-        # Detector checks the deck size, before the emulator is created.
-        cards = [action.CARD for action in actions]
+        # With ai.enabled the trained model picks the moves, and its deck
+        # replaces the one from the actions.
+        ai_config = config.get("ai") or {}
+        self.policy = (
+            _load_policy(ai_config) if ai_config.get("enabled") else None
+        )
+        if self.policy is not None:
+            cards = list(self.policy.deck)
+        else:
+            cards = [action.CARD for action in actions]
         self.cards_to_actions = dict(zip(cards, actions, strict=False))
+
+        # Detector checks the deck size, before the emulator is created.
 
         self.play_action_delay = config.get("ingame", {}).get("play_action", 1)
         self.visualizer = Visualizer(**config["visuals"])
@@ -136,8 +167,11 @@ class Bot:
         return state
 
     def play_action(self, action):
-        card_centre = self._get_card_centre(action.index)
-        tile_centre = self._get_tile_centre(action.tile_x, action.tile_y)
+        self._play(action.index, action.tile_x, action.tile_y)
+
+    def _play(self, index, tile_x, tile_y):
+        card_centre = self._get_card_centre(index)
+        tile_centre = self._get_tile_centre(tile_x, tile_y)
         self.emulator.click(*card_centre)
         self.emulator.click(*tile_centre)
 
@@ -183,7 +217,25 @@ class Bot:
         self._handle_game_step(state)
         return state
 
+    def _handle_learned_step(self, state: State):
+        decision = self.policy.decide(state)
+        if decision is None:
+            self._log_and_wait(
+                "The model chose to wait", self.play_action_delay
+            )
+            return
+        self._play(decision.slot, decision.tile_x, decision.tile_y)
+        self._log_and_wait(
+            f"Playing {decision.card_name} at "
+            f"({decision.tile_x}, {decision.tile_y}) "
+            f"with confidence {decision.confidence:.2f}",
+            self.play_action_delay,
+        )
+
     def _handle_game_step(self, state: State):
+        if self.policy is not None:
+            self._handle_learned_step(state)
+            return
         actions = self.get_actions(state)
         if not actions:
             self._log_and_wait("No actions available", self.play_action_delay)

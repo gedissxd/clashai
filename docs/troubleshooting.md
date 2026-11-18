@@ -47,3 +47,7 @@ Couldn't save your settings to `config.yaml` in the project folder. Check that t
 
 ### Error E010
 The bot couldn't reach the OneJev screen detector. Start its server in another terminal before starting the bot (see [Bot Installation](bot-installation.md#step-7-start-the-screen-detector)), and check that the **Server URL** under Screen Detector in the Settings tab (`screen_detector.base_url` in `config.yaml`) matches its address (`http://localhost:8000` by default).
+
+
+### Error E011
+The bot couldn't load the trained AI model, which it uses when `ai.enabled` is on in `config.yaml`. Check that `ai.model_path` points at the `.onnx` file made by `scripts/train.py`, and that the `.json` file with the same name is next to it. If the message says the model was trained with an older version of the bot, train it again. To go back to the hand-written rules, set `ai.enabled` to `False`. See [AI training](ai-training.md).
