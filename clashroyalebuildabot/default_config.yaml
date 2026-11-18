@@ -46,3 +46,22 @@ screen_detector:
   interval: 1.0
   max_age: 5.0
   timeout: 10.0
+
+ai:
+  # Play with a model trained on your own games instead of the hand-written
+  # rules. See docs/ai-training.md for how to record games and train it.
+  enabled: False
+  # Where scripts/train.py saved the model, relative to the project folder.
+  model_path: ai_models/policy.onnx
+  # How sure the model must be, compared with waiting, before it plays a
+  # card (0-1). Lower it if the bot waits too much, raise it if it spams.
+  play_threshold: 0.5
+  # Your deck by card name, for scripts/record.py, e.g. [archers, knight, ...].
+  # Leave empty to use the deck from main.py.
+  deck: []
+  # If scripts/record.py --check-touch shows your taps in the wrong place,
+  # fix the touch axes here.
+  touch:
+    swap_xy: False
+    flip_x: False
+    flip_y: False

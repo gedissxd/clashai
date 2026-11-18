@@ -24,17 +24,21 @@ except Exception as e:
     raise WikifiedError("001", "Missing imports.") from e
 
 
+# Your deck: one action per card. scripts/record.py also reads this deck.
+ACTIONS = [
+    ArchersAction,
+    GoblinBarrelAction,
+    BabyDragonAction,
+    CannonAction,
+    KnightAction,
+    MinipekkaAction,
+    MusketeerAction,
+    WitchAction,
+]
+
+
 def main():
-    actions = [
-        ArchersAction,
-        GoblinBarrelAction,
-        BabyDragonAction,
-        CannonAction,
-        KnightAction,
-        MinipekkaAction,
-        MusketeerAction,
-        WitchAction,
-    ]
+    actions = ACTIONS
     try:
         config = load_config()
 
